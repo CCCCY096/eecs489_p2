@@ -1,3 +1,7 @@
+// TODO:
+// Swap helper
+
+
 #include "utility.h"
 #include "cpu_impl.h"
 #include <iostream>
@@ -6,24 +10,24 @@ std::queue<thread::impl *> finished_queue;
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
 {
     user_func(user_arg);
+    curr_impl->done = true;
     while (!finished_queue.empty()){
         // Delete its stack and context
         thread::impl* to_be_deleted = finished_queue.front();
         finished_queue.pop();
         delete[] (char*)to_be_deleted->ctx_ptr->uc_stack.ss_sp;
         delete to_be_deleted->ctx_ptr;
+        to_be_deleted->ctx_ptr = nullptr;
         // Before delete this thread, release all threads that are waiting for it
         while (!to_be_deleted->join_queue.empty())
         {
             ready_queue.push(to_be_deleted->join_queue.front());
             to_be_deleted->join_queue.pop();
         }
-        delete to_be_deleted;
     }
     // If no available user functions in ready_queue, suspend
     while (ready_queue.empty())
     {
-        std::cout <<"i really want to suspend" <<std::endl;
         cpu::interrupt_enable_suspend();
     }
     // Pick the first available user function:

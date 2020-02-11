@@ -10,6 +10,7 @@ class thread::impl
 public:
     ucontext_t *ctx_ptr;
     std::queue<thread::impl *> join_queue;
+    bool done = false;
 };
 
 #endif
