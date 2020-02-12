@@ -48,7 +48,22 @@
 			"stdexcept": "cpp",
 			"streambuf": "cpp",
 			"thread": "cpp",
-			"typeinfo": "cpp"
+			"typeinfo": "cpp",
+			"cstring": "cpp",
+			"strstream": "cpp",
+			"bitset": "cpp",
+			"complex": "cpp",
+			"list": "cpp",
+			"functional": "cpp",
+			"iomanip": "cpp",
+			"numeric": "cpp",
+			"cfenv": "cpp",
+			"cinttypes": "cpp",
+			"typeindex": "cpp",
+			"iterator": "cpp",
+			"map": "cpp",
+			"random": "cpp",
+			"set": "cpp"
 		}
 	}
 }

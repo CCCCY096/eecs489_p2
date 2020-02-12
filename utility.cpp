@@ -1,10 +1,10 @@
 // TODO:
-// Swap helper
-
+// Delete the third argument in wrapper()
+// Mutex/cv private member variables?
+// while -> if?
 
 #include "utility.h"
 #include "cpu_impl.h"
-#include <iostream>
 std::queue<thread::impl *> ready_queue;
 std::queue<thread::impl *> finished_queue;
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
@@ -26,18 +26,12 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
         }
     }
     // If no available user functions in ready_queue, suspend
-    while (ready_queue.empty())
-    {
-        cpu::interrupt_enable_suspend();
-    }
+
     // Pick the first available user function:
     // 1. push current context to finished queue
     // 2. switch to next context
     finished_queue.push(curr_impl);
-    thread::impl *next_impl = ready_queue.front();
-    ready_queue.pop();
-    cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
-    swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
+    switch_helper();
 }
 
 
@@ -56,4 +50,20 @@ thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
     thread_impl_ptr->ctx_ptr = ucontext_ptr;
     makecontext(ucontext_ptr, (void (*)())wrapper, 3, user_func, user_arg, thread_impl_ptr );
     return thread_impl_ptr;
+}
+
+void switch_helper()
+{
+    while (ready_queue.empty())
+    {
+        cpu::interrupt_enable_suspend();
+    }
+    thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
+    // Pick next ready thread and pop it from ready_queue
+    thread::impl *next_impl = ready_queue.front();
+    ready_queue.pop();
+    // Make sure cpu remember on what thread it is running
+    cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
+    // swap context
+    swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
 }

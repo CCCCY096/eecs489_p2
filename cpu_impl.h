@@ -10,5 +10,4 @@ public:
     thread::impl *thread_impl_ptr;
 };
 
-
 #endif

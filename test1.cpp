@@ -61,7 +61,7 @@ void receiver ( void* a ){
       while( queue_size < max_disk_queue )
          cv_receive.wait( mqueue );
       int rid = find_closest_track( );
-      cout << " Serve track: " << rid << std::endl;
+      cout << " Serve track: " << requestsCollector[ rid ].front()<< std::endl;
       requestsCollector[ rid ].pop( );
       if( requestsCollector[ rid ].empty( ) && intermediate[ rid ].empty( ) ){
          current_active_threads--;
