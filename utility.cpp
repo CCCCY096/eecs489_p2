@@ -7,12 +7,8 @@
 #include "cpu_impl.h"
 std::queue<thread::impl *> ready_queue;
 std::queue<thread::impl *> finished_queue;
-void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
+void release_memory()
 {
-    cpu::interrupt_enable();
-    user_func(user_arg);
-    raii_interrupt interrupt_disable;
-    curr_impl->done = true;
     while (!finished_queue.empty()){
         // Delete its stack and context
         thread::impl* to_be_deleted = finished_queue.front();
@@ -20,8 +16,15 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
         delete[] (char*)to_be_deleted->ctx_ptr->uc_stack.ss_sp;
         delete to_be_deleted->ctx_ptr;
         to_be_deleted->ctx_ptr = nullptr;
-
     }
+}
+
+void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
+{
+    cpu::interrupt_enable();
+    user_func(user_arg);
+    raii_interrupt interrupt_disable;
+    curr_impl->done = true;
     // If no available user functions in ready_queue, suspend
 
     // Pick the first available user function:
@@ -34,8 +37,6 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
         ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr->join_queue.front());
         cpu::self()->impl_ptr->thread_impl_ptr->join_queue.pop();
     }
-
-
     switch_helper();
 }
 
@@ -74,4 +75,5 @@ void switch_helper()
     // swap context
     swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
     assert_interrupts_disabled();
+    release_memory();
 }
