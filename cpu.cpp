@@ -22,6 +22,7 @@ void cpu::init(thread_startfunc_t user_func, void *user_arg)
     {
         thread::impl *start_impl = context_init(user_func, user_arg);
         cpu::self()->impl_ptr->thread_impl_ptr = start_impl;
+        //interrupt TBD
         setcontext(start_impl->ctx_ptr);
     }
 }

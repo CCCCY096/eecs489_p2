@@ -13,6 +13,7 @@ cv::~cv(){
 
 void cv::wait(mutex& m){
     // assert        
+    raii_interrupt_dis();
     impl_ptr->cv_waiting.push(cpu::self()->impl_ptr->thread_impl_ptr);
     m.unlock();
     switch_helper();

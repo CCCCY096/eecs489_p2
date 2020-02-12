@@ -5,13 +5,27 @@
 #include "thread_impl.h"
 #include <queue>
 
-class raii_interrupt
+class raii_interrupt_dis
 {
-    raii_interrupt()
+public:
+    raii_interrupt_dis()
+    {
+        cpu::interrupt_disable();
+    }
+    ~raii_interrupt_dis()
     {
         cpu::interrupt_enable();
     }
-    ~raii_interrupt()
+};
+
+class raii_interrupt_en
+{
+public:
+    raii_interrupt_en()
+    {
+        cpu::interrupt_enable();
+    }
+    ~raii_interrupt_en()
     {
         cpu::interrupt_disable();
     }
