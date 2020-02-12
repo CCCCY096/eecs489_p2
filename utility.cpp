@@ -20,12 +20,7 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
         delete[] (char*)to_be_deleted->ctx_ptr->uc_stack.ss_sp;
         delete to_be_deleted->ctx_ptr;
         to_be_deleted->ctx_ptr = nullptr;
-        // Before delete this thread, release all threads that are waiting for it
-        while (!to_be_deleted->join_queue.empty())
-        {
-            ready_queue.push(to_be_deleted->join_queue.front());
-            to_be_deleted->join_queue.pop();
-        }
+
     }
     // If no available user functions in ready_queue, suspend
 
@@ -33,6 +28,14 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
     // 1. push current context to finished queue
     // 2. switch to next context
     finished_queue.push(curr_impl);
+    // Before delete this thread, release all threads that are waiting for it
+    while (!cpu::self()->impl_ptr->thread_impl_ptr->join_queue.empty())
+    {
+        ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr->join_queue.front());
+        cpu::self()->impl_ptr->thread_impl_ptr->join_queue.pop();
+    }
+
+
     switch_helper();
 }
 
