@@ -3,6 +3,7 @@
 #include "utility.h"
 #include "thread_impl.h"
 #include "cpu_impl.h"
+#include "mutex_impl.h"
 cv::cv(){
     impl_ptr = new cv::impl;
 }
@@ -12,16 +13,16 @@ cv::~cv(){
 }
 
 void cv::wait(mutex& m){
-    // assert        
-    raii_interrupt_dis();
+    raii_interrupt interrupt_disable;
     impl_ptr->cv_waiting.push(cpu::self()->impl_ptr->thread_impl_ptr);
-    m.unlock();
+    m.impl_ptr->release();
     switch_helper();
-    m.lock();
+    m.impl_ptr->acquire();
 }
 
 void cv::signal()
 {
+    raii_interrupt interrupt_disable;
     if(!impl_ptr->cv_waiting.empty())
     {
         ready_queue.push(impl_ptr->cv_waiting.front());
@@ -30,6 +31,7 @@ void cv::signal()
 }
 
 void cv::broadcast(){
+    raii_interrupt interrupt_disable;
     while(!impl_ptr->cv_waiting.empty()){
         ready_queue.push(impl_ptr->cv_waiting.front());
         impl_ptr->cv_waiting.pop();

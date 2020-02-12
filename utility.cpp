@@ -9,7 +9,9 @@ std::queue<thread::impl *> ready_queue;
 std::queue<thread::impl *> finished_queue;
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
 {
+    cpu::interrupt_enable();
     user_func(user_arg);
+    raii_interrupt interrupt_disable;
     curr_impl->done = true;
     while (!finished_queue.empty()){
         // Delete its stack and context
@@ -54,9 +56,11 @@ thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
 
 void switch_helper()
 {
+    assert_interrupts_disabled();
     while (ready_queue.empty())
     {
         cpu::interrupt_enable_suspend();
+        
     }
     thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
     // Pick next ready thread and pop it from ready_queue
@@ -66,4 +70,5 @@ void switch_helper()
     cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
     // swap context
     swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
+    assert_interrupts_disabled();
 }

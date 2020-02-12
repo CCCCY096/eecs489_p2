@@ -1,8 +1,6 @@
 #include "cpu.h"
 #include "cpu_impl.h"
 #include "utility.h"
-#include <iostream>
-
 void timer_handler()
 {
     thread::yield();
