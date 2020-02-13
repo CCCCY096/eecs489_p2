@@ -1,6 +1,7 @@
 #include "cpu.h"
 #include "cpu_impl.h"
 #include "utility.h"
+#include <stdexcept>
 void timer_handler()
 {
     thread::yield();
@@ -15,7 +16,11 @@ void cpu::init(thread_startfunc_t user_func, void *user_arg)
 {
     interrupt_vector_table[TIMER] = timer_handler;
     interrupt_vector_table[IPI] = ipi_handler;
-    cpu::self()->impl_ptr = new cpu::impl;
+    try{
+        cpu::self()->impl_ptr = new cpu::impl;
+    }catch(std::bad_alloc&){
+        throw;
+    }
     if (user_func)
     {
         thread::impl *start_impl = context_init(user_func, user_arg);

@@ -4,8 +4,13 @@
 #include "thread_impl.h"
 #include "cpu_impl.h"
 #include "mutex_impl.h"
+#include <stdexcept>
 cv::cv(){
-    impl_ptr = new cv::impl;
+    try{
+        impl_ptr = new cv::impl;
+    }catch(std::bad_alloc&){
+        throw;
+    }
 }
 
 cv::~cv(){

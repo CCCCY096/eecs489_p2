@@ -5,7 +5,11 @@
 #include <atomic>
 #include "mutex_impl.h"
 mutex::mutex(){
-    impl_ptr = new mutex::impl;
+     try{
+        impl_ptr = new mutex::impl;
+    }catch(std::bad_alloc&){
+        throw;
+    }
 }
 
 mutex::~mutex(){
