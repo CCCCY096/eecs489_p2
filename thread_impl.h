@@ -11,6 +11,7 @@ public:
     ucontext_t *ctx_ptr;
     std::queue<thread::impl *> join_queue;
     bool done = false;
+    uint32_t tid;
 };
 
 #endif

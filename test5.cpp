@@ -26,5 +26,5 @@ void scheduler()
 
 int main()
 {
-    cpu::boot(1, (thread_startfunc_t)scheduler, nullptr, false, true, 0);
+    cpu::boot(1, (thread_startfunc_t)scheduler, nullptr, false, false, 0);
 }

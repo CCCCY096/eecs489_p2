@@ -20,6 +20,7 @@ public:
 
 extern std::queue<thread::impl *> ready_queue;
 extern std::queue<thread::impl *> finished_queue;
+extern uint32_t id_auto_incr;
 enum statusType
 {
     FREE,

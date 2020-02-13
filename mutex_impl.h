@@ -10,8 +10,9 @@ class mutex::impl
 public:
     std::queue<thread::impl *> m_waiting;
     statusType status = FREE;
+    uint32_t owner_id = 0;
     void release(){
-        if (status != BUSY) 
+        if (status != BUSY || owner_id != cpu::self()->impl_ptr->thread_impl_ptr->tid) 
             throw std::runtime_error("Sincerely apologize that we dont support your advanced codeing style :(");
         status = FREE;
         if(!m_waiting.empty())
@@ -23,7 +24,10 @@ public:
     }
     void acquire(){
         if(status == FREE)
+        {
             status = BUSY;
+            owner_id = cpu::self()->impl_ptr->thread_impl_ptr->tid;
+        }
         else
         {
             m_waiting.push(cpu::self()->impl_ptr->thread_impl_ptr);
