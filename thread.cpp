@@ -1,10 +1,15 @@
 #include "thread.h"
 #include "utility.h"
 #include "cpu_impl.h"
+#include <stdexcept>
 thread::thread(thread_startfunc_t user_func, void *user_arg)
 {
     raii_interrupt interrupt_disable;
-    impl_ptr = context_init(user_func, user_arg);
+    try{
+        impl_ptr = context_init(user_func, user_arg);
+    }catch(std::bad_alloc&){
+        throw;
+    }
     ready_queue.push(impl_ptr);
 }
 

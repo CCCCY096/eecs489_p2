@@ -45,12 +45,12 @@ void requester ( void* a ){
       requestsCollector[ id ].push( req_track );
       intermediate[ id ].pop( );
       queue_size++;
+      mqueue.unlock( );
       cv_receive.signal( );
    }
    req_num--;
    if( !req_num )
       cv_receive.signal( );
-   mqueue.unlock( );
    delete ( int* ) a;
    return;
 }

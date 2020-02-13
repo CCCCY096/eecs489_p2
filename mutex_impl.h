@@ -4,12 +4,14 @@
 #include "thread_impl.h"
 #include <queue>
 #include "utility.h"
+#include <stdexcept>
 class mutex::impl
 {
 public:
     std::queue<thread::impl *> m_waiting;
     statusType status = FREE;
     void release(){
+        if (status != BUSY) std::runtime_error("Sincerely apologize that we dont support your advanced codeing style :(");
         status = FREE;
         if(!m_waiting.empty())
         {
