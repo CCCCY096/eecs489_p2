@@ -2,7 +2,7 @@
 
 void scheduler(){
     mutex m1;
-    m1.lock();
+    m1.unlock();
     m1.lock();
 }
 

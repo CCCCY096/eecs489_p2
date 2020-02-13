@@ -11,7 +11,8 @@ public:
     std::queue<thread::impl *> m_waiting;
     statusType status = FREE;
     void release(){
-        if (status != BUSY) std::runtime_error("Sincerely apologize that we dont support your advanced codeing style :(");
+        if (status != BUSY) 
+            throw std::runtime_error("Sincerely apologize that we dont support your advanced codeing style :(");
         status = FREE;
         if(!m_waiting.empty())
         {

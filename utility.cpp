@@ -30,14 +30,13 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
     // Pick the first available user function:
     // 1. push current context to finished queue
     // 2. switch to next context
-    finished_queue.push(curr_impl);
     // Before delete this thread, release all threads that are waiting for it
     while (!cpu::self()->impl_ptr->thread_impl_ptr->join_queue.empty())
     {
         ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr->join_queue.front());
         cpu::self()->impl_ptr->thread_impl_ptr->join_queue.pop();
     }
-    switch_helper();
+    switch_helper(curr_impl);
 }
 
 
@@ -58,7 +57,7 @@ thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
     return thread_impl_ptr;
 }
 
-void switch_helper()
+void switch_helper(thread::impl* ptr)
 {
     assert_interrupts_disabled();
     while (ready_queue.empty())
@@ -66,6 +65,8 @@ void switch_helper()
         cpu::interrupt_enable_suspend();
         
     }
+    if(ptr)
+        finished_queue.push(ptr);
     thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
     // Pick next ready thread and pop it from ready_queue
     thread::impl *next_impl = ready_queue.front();
@@ -73,7 +74,7 @@ void switch_helper()
     // Make sure cpu remember on what thread it is running
     cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
     // swap context
+    release_memory();
     swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
     assert_interrupts_disabled();
-    release_memory();
 }
