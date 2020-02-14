@@ -28,4 +28,14 @@ void cpu::init(thread_startfunc_t user_func, void *user_arg)
         //interrupt TBD
         setcontext(start_impl->ctx_ptr);
     }
+    while (ready_queue.empty())
+    {
+        sleep_queue.push(cpu::self());
+        cpu::interrupt_enable_suspend();
+    }
+    thread::impl *next_impl = ready_queue.front();
+    cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
+    ready_queue.pop();
+    setcontext(next_impl->ctx_ptr);
 }
+

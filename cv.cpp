@@ -31,6 +31,7 @@ void cv::signal()
     if(!impl_ptr->cv_waiting.empty())
     {
         ready_queue.push(impl_ptr->cv_waiting.front());
+        morning_call();
         impl_ptr->cv_waiting.pop();
     }
 }
@@ -39,6 +40,7 @@ void cv::broadcast(){
     raii_interrupt interrupt_disable;
     while(!impl_ptr->cv_waiting.empty()){
         ready_queue.push(impl_ptr->cv_waiting.front());
+        morning_call();
         impl_ptr->cv_waiting.pop();
     }
 }

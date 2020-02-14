@@ -12,6 +12,7 @@ thread::thread(thread_startfunc_t user_func, void *user_arg)
         throw;
     }
     ready_queue.push(impl_ptr);
+    morning_call();
 }
 
 thread::~thread() {
@@ -44,5 +45,6 @@ void thread::yield()
     if (ready_queue.empty())
         return;
     ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr);
+    morning_call();
     switch_helper();
 }

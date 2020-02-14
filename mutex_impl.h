@@ -18,6 +18,7 @@ public:
         if(!m_waiting.empty())
         {
             ready_queue.push(m_waiting.front());
+            morning_call();
             owner_id = m_waiting.front()->tid;
             m_waiting.pop();
             status = BUSY;

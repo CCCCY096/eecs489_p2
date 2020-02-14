@@ -2,12 +2,14 @@
 // Delete the third argument in wrapper()
 // Mutex/cv private member variables?
 // while -> if?
+// ready_queue.push change it to helper function?
 
 #include "utility.h"
 #include <cassert>
 #include "cpu_impl.h"
 std::queue<thread::impl *> ready_queue;
 std::queue<ucontext_t *> finished_queue;
+std::queue<cpu *> sleep_queue;
 uint32_t id_auto_incr = 1;
 void release_memory()
 {
@@ -23,6 +25,7 @@ void release_memory()
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
 {
     release_memory();
+    cpu::guard.store(0);
     cpu::interrupt_enable();
     user_func(user_arg);
     raii_interrupt interrupt_disable;
@@ -37,6 +40,7 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
     while (!cpu::self()->impl_ptr->thread_impl_ptr->join_queue.empty())
     {
         ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr->join_queue.front());
+        morning_call();
         cpu::self()->impl_ptr->thread_impl_ptr->join_queue.pop();
     }
     if(!curr_impl->done) 
@@ -76,6 +80,7 @@ void switch_helper(ucontext_t* ptr)
     assert_interrupts_disabled();
     while (ready_queue.empty())
     {
+        sleep_queue.push(cpu::self());
         cpu::interrupt_enable_suspend();
         
     }
@@ -96,4 +101,12 @@ void switch_helper(ucontext_t* ptr)
     }
     assert_interrupts_disabled();
     release_memory();
+}
+
+void morning_call()
+{
+    if(!sleep_queue.empty()){
+        sleep_queue.front()->interrupt_send();
+        sleep_queue.pop();
+    }
 }
