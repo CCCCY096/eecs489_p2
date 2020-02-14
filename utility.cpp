@@ -25,6 +25,7 @@ void release_memory()
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
 {
     release_memory();
+    assert_interrupts_disabled();
     cpu::guard.store(0);
     cpu::interrupt_enable();
     user_func(user_arg);
@@ -81,8 +82,10 @@ void switch_helper(ucontext_t* ptr)
     while (ready_queue.empty())
     {
         sleep_queue.push(cpu::self());
+        assert_interrupts_disabled();
         cpu::interrupt_enable_suspend();
-        
+        assert_interrupts_enabled();
+        raii_interrupt interrupt;
     }
     thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
     // Pick next ready thread and pop it from ready_queue

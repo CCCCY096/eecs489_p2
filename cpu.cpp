@@ -31,8 +31,14 @@ void cpu::init(thread_startfunc_t user_func, void *user_arg)
     while (ready_queue.empty())
     {
         sleep_queue.push(cpu::self());
+        assert_interrupts_disabled();
         cpu::interrupt_enable_suspend();
+        assert_interrupts_enabled();
+        raii_interrupt interrupt;
+        assert_interrupts_disabled();
+        assert_interrupts_disabled();
     }
+    assert_interrupts_disabled();
     thread::impl *next_impl = ready_queue.front();
     cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
     ready_queue.pop();
