@@ -2,6 +2,7 @@
 #include "utility.h"
 #include "cpu_impl.h"
 #include <stdexcept>
+#include <cassert>
 thread::thread(thread_startfunc_t user_func, void *user_arg)
 {
     raii_interrupt interrupt_disable;
@@ -13,12 +14,23 @@ thread::thread(thread_startfunc_t user_func, void *user_arg)
     ready_queue.push(impl_ptr);
 }
 
-thread::~thread() {}
+thread::~thread() {
+    if(!this->impl_ptr->done) 
+        this->impl_ptr->done = true;
+    else {
+        assert(this->impl_ptr->join_queue.empty());
+        this->impl_ptr->ctx_ptr = nullptr;
+        delete this->impl_ptr;
+        this->impl_ptr = nullptr;
+    }
+}
 
 void thread::join(){
     raii_interrupt interrupt_disable;
     cpu* current = cpu::self();
-    if (!this->impl_ptr->done)
+    if(this->impl_ptr && impl_ptr->thread_finished )
+        return;
+    else if (this->impl_ptr && impl_ptr->thread_finished == false)
         this->impl_ptr->join_queue.push(current->impl_ptr->thread_impl_ptr);
     else
         return;

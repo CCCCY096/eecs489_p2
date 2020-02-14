@@ -1,16 +1,16 @@
 #include <iostream>
 #include <cstdlib>
 #include "thread.h"
-//thread object ends first
-void printer(thread* n)
+//wrapper(thread) ends first
+void printer()
 {
-    n->join();
     std::cout << "first finished " << std::endl;
 }
 
 void scheduler()
 {
-    thread t1((thread_startfunc_t)printer, (void *)&t1);
+    thread t1((thread_startfunc_t)printer , nullptr);
+    t1.join();
     std::cout << " printer finished" << std::endl;
 }
 

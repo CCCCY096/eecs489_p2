@@ -4,45 +4,57 @@
 // while -> if?
 
 #include "utility.h"
+#include <cassert>
 #include "cpu_impl.h"
 std::queue<thread::impl *> ready_queue;
-std::queue<thread::impl *> finished_queue;
+std::queue<ucontext_t *> finished_queue;
 uint32_t id_auto_incr = 1;
 void release_memory()
 {
     while (!finished_queue.empty()){
         // Delete its stack and context
-        thread::impl* to_be_deleted = finished_queue.front();
+        ucontext_t* to_be_deleted = finished_queue.front();
         finished_queue.pop();
-        delete[] (char*)to_be_deleted->ctx_ptr->uc_stack.ss_sp;
-        delete to_be_deleted->ctx_ptr;
-        to_be_deleted->ctx_ptr = nullptr;
+        delete[] (char*)to_be_deleted->uc_stack.ss_sp;
+        delete to_be_deleted;
     }
 }
 
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
 {
+    release_memory();
     cpu::interrupt_enable();
     user_func(user_arg);
     raii_interrupt interrupt_disable;
-    curr_impl->done = true;
     // If no available user functions in ready_queue, suspend
 
     // Pick the first available user function:
     // 1. push current context to finished queue
     // 2. switch to next context
     // Before delete this thread, release all threads that are waiting for it
+    curr_impl->thread_finished = true;
+    ucontext_t* useless_context = curr_impl->ctx_ptr;
     while (!cpu::self()->impl_ptr->thread_impl_ptr->join_queue.empty())
     {
         ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr->join_queue.front());
         cpu::self()->impl_ptr->thread_impl_ptr->join_queue.pop();
     }
-    switch_helper(curr_impl);
+    if(!curr_impl->done) 
+        curr_impl->done = true;
+    else {
+        assert(curr_impl->join_queue.empty());
+        curr_impl->ctx_ptr = nullptr;
+        delete curr_impl;
+        curr_impl = nullptr;
+    }
+    switch_helper(useless_context);
 }
 
 
 thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
 {
+    // Release_memory
+    release_memory();
     // Make context
     ucontext_t *ucontext_ptr = new ucontext_t;
     char *stack = new char[STACK_SIZE];
@@ -59,7 +71,7 @@ thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
     return thread_impl_ptr;
 }
 
-void switch_helper(thread::impl* ptr)
+void switch_helper(ucontext_t* ptr)
 {
     assert_interrupts_disabled();
     while (ready_queue.empty())
@@ -74,9 +86,9 @@ void switch_helper(thread::impl* ptr)
     // Make sure cpu remember on what thread it is running
     cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
     // swap context
-    release_memory();
     if(ptr)
         finished_queue.push(ptr);
     swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
     assert_interrupts_disabled();
+    release_memory();
 }

@@ -12,12 +12,13 @@ public:
     statusType status = FREE;
     uint32_t owner_id = 0;
     void release(){
-        if (status != BUSY || owner_id != cpu::self()->impl_ptr->thread_impl_ptr->tid) 
+        if (status != BUSY || owner_id != cpu::self()->impl_ptr->thread_impl_ptr->tid ) 
             throw std::runtime_error("Sincerely apologize that we dont support your advanced codeing style :(");
         status = FREE;
         if(!m_waiting.empty())
         {
             ready_queue.push(m_waiting.front());
+            owner_id = m_waiting.front()->tid;
             m_waiting.pop();
             status = BUSY;
         }

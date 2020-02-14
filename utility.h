@@ -19,7 +19,7 @@ public:
 };
 
 extern std::queue<thread::impl *> ready_queue;
-extern std::queue<thread::impl *> finished_queue;
+extern std::queue<ucontext_t *> finished_queue;
 extern uint32_t id_auto_incr;
 enum statusType
 {
@@ -28,5 +28,5 @@ enum statusType
 };
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl);
 thread::impl *context_init(thread_startfunc_t user_func, void *user_arg);
-void switch_helper(thread::impl* ptr = nullptr);
+void switch_helper(ucontext_t* ptr = nullptr);
 #endif
