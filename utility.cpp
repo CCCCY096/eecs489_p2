@@ -86,9 +86,14 @@ void switch_helper(ucontext_t* ptr)
     // Make sure cpu remember on what thread it is running
     cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
     // swap context
-    if(ptr)
+    release_memory();
+    if(ptr){
         finished_queue.push(ptr);
-    swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
+        swapcontext(ptr, next_impl->ctx_ptr);
+    }else
+    {
+        swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
+    }
     assert_interrupts_disabled();
     release_memory();
 }
