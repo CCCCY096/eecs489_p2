@@ -7,31 +7,31 @@ mutex m;
 void printer(int &n)
 {
     std::cout<< "p1 arrived "<<std::endl;
-    // int i = 0;
-    // while (i < 30)
-    // {
-    //     m.lock();
-    //     std::cout<< "thread 1: " << i++ <<std::endl;
-    //     m.unlock();
-    // }
-    // m.lock();
-    // printf("printer1 finished\n");
-    // m.unlock();
+    int i = 0;
+    while (i < 30)
+    {
+        m.lock();
+        std::cout<< "thread 1: " << i++ <<std::endl;
+        m.unlock();
+    }
+    m.lock();
+    printf("printer1 finished\n");
+    m.unlock();
 }
 
 void printer2(int &n)
 {
     std::cout<< "p2 arrived "<<std::endl;
-    // int i = 0;
-    // while (i < 30)
-    // {
-    //     m.lock();
-    //     std::cout<< "thread 2: " << i++ <<std::endl;
-    //     m.unlock();
-    // }
-    // m.lock();
-    // printf("printer2 finished\n");
-    // m.unlock();
+    int i = 0;
+    while (i < 30)
+    {
+        m.lock();
+        std::cout<< "thread 2: " << i++ <<std::endl;
+        m.unlock();
+    }
+    m.lock();
+    printf("printer2 finished\n");
+    m.unlock();
 }
 
 void scheduler()

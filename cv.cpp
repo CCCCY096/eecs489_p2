@@ -18,6 +18,7 @@ cv::~cv(){
 }
 
 void cv::wait(mutex& m){
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     impl_ptr->cv_waiting.push(cpu::self()->impl_ptr->thread_impl_ptr);
     m.impl_ptr->release();
@@ -27,6 +28,7 @@ void cv::wait(mutex& m){
 
 void cv::signal()
 {
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     if(!impl_ptr->cv_waiting.empty())
     {
@@ -37,6 +39,7 @@ void cv::signal()
 }
 
 void cv::broadcast(){
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     while(!impl_ptr->cv_waiting.empty()){
         ready_queue.push(impl_ptr->cv_waiting.front());

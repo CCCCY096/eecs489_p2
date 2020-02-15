@@ -14,6 +14,11 @@ void ipi_handler()
 
 void cpu::init(thread_startfunc_t user_func, void *user_arg)
 {
+    //////////////////
+    while(cpu::guard.exchange(1)){}
+    //////////////////
+
+
     interrupt_vector_table[TIMER] = timer_handler;
     interrupt_vector_table[IPI] = ipi_handler;
     try{
@@ -28,17 +33,18 @@ void cpu::init(thread_startfunc_t user_func, void *user_arg)
         //interrupt TBD
         setcontext(start_impl->ctx_ptr);
     }
+
     while (ready_queue.empty())
     {
         sleep_queue.push(cpu::self());
-        assert_interrupts_disabled();
+        cpu::guard.store(0);
         cpu::interrupt_enable_suspend();
-        assert_interrupts_enabled();
-        raii_interrupt interrupt;
-        assert_interrupts_disabled();
-        assert_interrupts_disabled();
+        // raii_interrupt interrupt;
+        ////////////////////////////
+        cpu::interrupt_disable();
+        while(cpu::guard.exchange(1)){}
+        /////
     }
-    assert_interrupts_disabled();
     thread::impl *next_impl = ready_queue.front();
     cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
     ready_queue.pop();

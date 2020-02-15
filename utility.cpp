@@ -3,6 +3,7 @@
 // Mutex/cv private member variables?
 // while -> if?
 // ready_queue.push change it to helper function?
+// 2 raii? one for guard, one for interrupt?
 
 #include "utility.h"
 #include <cassert>
@@ -24,11 +25,12 @@ void release_memory()
 
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
 {
-    release_memory();
     assert_interrupts_disabled();
+    release_memory();
     cpu::guard.store(0);
     cpu::interrupt_enable();
     user_func(user_arg);
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     // If no available user functions in ready_queue, suspend
 
@@ -82,10 +84,12 @@ void switch_helper(ucontext_t* ptr)
     while (ready_queue.empty())
     {
         sleep_queue.push(cpu::self());
-        assert_interrupts_disabled();
+        cpu::guard.store(0);
         cpu::interrupt_enable_suspend();
+        // raii_interrupt interrupt;
         assert_interrupts_enabled();
-        raii_interrupt interrupt;
+        cpu::interrupt_disable();
+        while(cpu::guard.exchange(1)){}
     }
     thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
     // Pick next ready thread and pop it from ready_queue

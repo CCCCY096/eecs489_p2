@@ -11,12 +11,14 @@ class raii_interrupt
 public:
     raii_interrupt()
     {
+        assert_interrupts_enabled();
         cpu::interrupt_disable();
         while(cpu::guard.exchange(1)){}
     }
     ~raii_interrupt()
     {
         cpu::guard.store(0);
+        assert_interrupts_disabled();
         cpu::interrupt_enable();
     }
 };

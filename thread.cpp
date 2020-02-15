@@ -5,6 +5,7 @@
 #include <cassert>
 thread::thread(thread_startfunc_t user_func, void *user_arg)
 {
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     try{
         impl_ptr = context_init(user_func, user_arg);
@@ -27,6 +28,7 @@ thread::~thread() {
 }
 
 void thread::join(){
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     cpu* current = cpu::self();
     if(this->impl_ptr && impl_ptr->thread_finished )
@@ -41,6 +43,7 @@ void thread::join(){
 
 void thread::yield()
 {
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     if (ready_queue.empty())
         return;

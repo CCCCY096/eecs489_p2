@@ -17,6 +17,7 @@ mutex::~mutex(){
 }
 
 void mutex::unlock(){
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     impl_ptr->release();
 }
@@ -24,6 +25,7 @@ void mutex::unlock(){
 
 void mutex::lock()
 {
+    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     impl_ptr->acquire();
 }
