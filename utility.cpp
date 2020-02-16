@@ -14,6 +14,7 @@ std::queue<cpu *> sleep_queue;
 uint32_t id_auto_incr = 1;
 void release_memory()
 {
+    assert_interrupts_disabled();
     while (!finished_queue.empty()){
         // Delete its stack and context
         ucontext_t* to_be_deleted = finished_queue.front();
@@ -21,6 +22,7 @@ void release_memory()
         delete[] (char*)to_be_deleted->uc_stack.ss_sp;
         delete to_be_deleted;
     }
+    assert_interrupts_disabled();
 }
 
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
@@ -54,6 +56,7 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
         delete curr_impl;
         curr_impl = nullptr;
     }
+    assert_interrupts_disabled();
     switch_helper(useless_context);
 }
 
@@ -74,6 +77,7 @@ thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
     thread::impl *thread_impl_ptr = new thread::impl;
     thread_impl_ptr->ctx_ptr = ucontext_ptr;
     thread_impl_ptr->tid = id_auto_incr++;
+    assert_interrupts_disabled();
     makecontext(ucontext_ptr, (void (*)())wrapper, 3, user_func, user_arg, thread_impl_ptr );
     return thread_impl_ptr;
 }
@@ -91,6 +95,7 @@ void switch_helper(ucontext_t* ptr)
         cpu::interrupt_disable();
         while(cpu::guard.exchange(1)){}
     }
+    assert_interrupts_disabled();
     thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
     // Pick next ready thread and pop it from ready_queue
     thread::impl *next_impl = ready_queue.front();
@@ -112,6 +117,7 @@ void switch_helper(ucontext_t* ptr)
 
 void morning_call()
 {
+    assert_interrupts_disabled();
     if(!sleep_queue.empty()){
         sleep_queue.front()->interrupt_send();
         sleep_queue.pop();

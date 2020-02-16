@@ -6,14 +6,16 @@ static int counter = 0;
 mutex m;
 void printer(int &n)
 {
-    std::cout<< "p1 arrived "<<std::endl;
-    int i = 0;
-    while (i < 30)
-    {
-        m.lock();
-        std::cout<< "thread 1: " << i++ <<std::endl;
-        m.unlock();
-    }
+    m.lock();
+    printf ("p1 arrived \n");
+    m.unlock();
+    // int i = 0;
+    // while (i < 30)
+    // {
+    //     m.lock();
+    //     std::cout<< "thread 1: " << i++ <<std::endl;
+    //     m.unlock();
+    // }
     m.lock();
     printf("printer1 finished\n");
     m.unlock();
@@ -21,14 +23,16 @@ void printer(int &n)
 
 void printer2(int &n)
 {
-    std::cout<< "p2 arrived "<<std::endl;
-    int i = 0;
-    while (i < 30)
-    {
-        m.lock();
-        std::cout<< "thread 2: " << i++ <<std::endl;
-        m.unlock();
-    }
+    m.lock();
+    printf ("p2 arrived \n");
+    m.unlock();
+    // int i = 0;
+    // while (i < 30)
+    // {
+    //     m.lock();
+    //     std::cout<< "thread 2: " << i++ <<std::endl;
+    //     m.unlock();
+    // }
     m.lock();
     printf("printer2 finished\n");
     m.unlock();

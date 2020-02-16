@@ -5,7 +5,6 @@
 #include <cassert>
 thread::thread(thread_startfunc_t user_func, void *user_arg)
 {
-    assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     try{
         impl_ptr = context_init(user_func, user_arg);
