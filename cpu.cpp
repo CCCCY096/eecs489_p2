@@ -37,23 +37,11 @@ void cpu::init(thread_startfunc_t user_func, void *user_arg)
         assert_interrupts_disabled();
         setcontext(start_impl->ctx_ptr);
     }
-    assert_interrupts_disabled();
-    while (ready_queue.empty())
+    else
     {
-        sleep_queue.push(cpu::self());
-        cpu::guard.store(0);
-        cpu::interrupt_enable_suspend();
-        assert_interrupts_enabled();
-        // raii_interrupt interrupt;
-        ////////////////////////////
-        cpu::interrupt_disable();
-        assert_interrupts_disabled();
-        while(cpu::guard.exchange(1)){}
-        /////
+        thread::impl* tool_thread = context_init((thread_startfunc_t)suspend_helper, (thread_startfunc_t)nullptr , (void*)nullptr);
+        cpu::self()->impl_ptr->thread_impl_ptr = tool_thread;
+        setcontext(tool_thread->ctx_ptr);
     }
-    thread::impl *next_impl = ready_queue.front();
-    cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
-    ready_queue.pop();
-    setcontext(next_impl->ctx_ptr);
 }
 

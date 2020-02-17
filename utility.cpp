@@ -120,7 +120,7 @@ void switch_helper(ucontext_t* curr_ctx_ptr)
 
 void suspend_helper()
 {
-
+    assert_interrupts_disabled();
     while (ready_queue.empty())
     {
         assert_interrupts_disabled();

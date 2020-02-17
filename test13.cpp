@@ -111,6 +111,6 @@ int main( int argc, char *argv[ ] ){
    qtmp.push( 11 );
    intermediate.push_back( qtmp );
    if( max_disk_queue > file_num ) max_disk_queue = file_num;
-   cpu::boot( 5, (thread_startfunc_t) scheduler, nullptr, false, true, 0 );
+   cpu::boot( 5, (thread_startfunc_t) scheduler, nullptr, true, true, 0 );
    return 0;
 }
