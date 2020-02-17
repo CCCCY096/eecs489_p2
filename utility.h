@@ -34,6 +34,7 @@ enum statusType
 };
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl);
 thread::impl *context_init(thread_startfunc_t user_func, void *user_arg);
-void switch_helper(ucontext_t* ptr = nullptr);
+void switch_helper();
+void suspend_helper();
 void morning_call();
 #endif

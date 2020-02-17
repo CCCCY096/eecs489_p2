@@ -41,7 +41,6 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
     // 2. switch to next context
     // Before delete this thread, release all threads that are waiting for it
     curr_impl->thread_finished = true;
-    ucontext_t* useless_context = curr_impl->ctx_ptr;
     while (!cpu::self()->impl_ptr->thread_impl_ptr->join_queue.empty())
     {
         ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr->join_queue.front());
@@ -56,8 +55,9 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
         delete curr_impl;
         curr_impl = nullptr;
     }
+    finished_queue.push(curr_impl->ctx_ptr);
     assert_interrupts_disabled();
-    switch_helper(useless_context);
+    switch_helper();
 }
 
 
@@ -79,40 +79,61 @@ thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
     thread_impl_ptr->tid = id_auto_incr++;
     assert_interrupts_disabled();
     makecontext(ucontext_ptr, (void (*)())wrapper, 3, user_func, user_arg, thread_impl_ptr );
+    assert_interrupts_disabled();
     return thread_impl_ptr;
 }
 
-void switch_helper(ucontext_t* ptr)
+void switch_helper()
 {
     assert_interrupts_disabled();
-    while (ready_queue.empty())
+    thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr; 
+    if (ready_queue.empty())
     {
-        sleep_queue.push(cpu::self());
-        cpu::guard.store(0);
-        cpu::interrupt_enable_suspend();
-        // raii_interrupt interrupt;
-        assert_interrupts_enabled();
-        cpu::interrupt_disable();
-        while(cpu::guard.exchange(1)){}
+        thread::impl* tool_thread = context_init((thread_startfunc_t)suspend_helper, (void*)nullptr);
+        cpu::self()->impl_ptr->thread_impl_ptr = tool_thread;
+        assert_interrupts_disabled();
+        swapcontext(curr_impl->ctx_ptr, tool_thread->ctx_ptr);
+        release_memory();
     }
+    else
+    {
+        assert_interrupts_disabled();
+        // Pick next ready thread and pop it from ready_queue
+        thread::impl *next_impl = ready_queue.front();
+        ready_queue.pop();
+        // Make sure cpu remember on what thread it is running
+        cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
+        // swap context
+        swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
+        assert_interrupts_disabled();
+        release_memory();
+    }
+}
+
+void suspend_helper()
+{
     assert_interrupts_disabled();
+    release_memory();
+    sleep_queue.push(cpu::self());
+    cpu::guard.store(0);
+    cpu::interrupt_enable_suspend();
+    // raii_interrupt interrupt;
+    assert_interrupts_enabled();
+    cpu::interrupt_disable();
+    while(cpu::guard.exchange(1)){}
+
     thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
+    finished_queue.push(curr_impl->ctx_ptr);
+    assert(curr_impl->join_queue.empty());
+    delete curr_impl;
+    curr_impl = nullptr;
     // Pick next ready thread and pop it from ready_queue
     thread::impl *next_impl = ready_queue.front();
     ready_queue.pop();
     // Make sure cpu remember on what thread it is running
     cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
-    // swap context
-    release_memory();
-    if(ptr){
-        finished_queue.push(ptr);
-        swapcontext(ptr, next_impl->ctx_ptr);
-    }else
-    {
-        swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
-    }
-    assert_interrupts_disabled();
-    release_memory();
+    // set context
+    setcontext(next_impl->ctx_ptr);
 }
 
 void morning_call()
