@@ -33,8 +33,8 @@ enum statusType
     BUSY
 };
 void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl);
-thread::impl *context_init(thread_startfunc_t user_func, void *user_arg);
-void switch_helper();
+thread::impl *context_init(thread_startfunc_t wrap_func ,thread_startfunc_t user_func, void *user_arg);
+void switch_helper(ucontext_t* curr_ctx_ptr = nullptr);
 void suspend_helper();
 void morning_call();
 #endif

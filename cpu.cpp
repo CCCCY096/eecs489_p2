@@ -1,6 +1,7 @@
 #include "cpu.h"
 #include "cpu_impl.h"
 #include "utility.h"
+#include <cassert>
 #include <stdexcept>
 void timer_handler()
 {
@@ -9,6 +10,7 @@ void timer_handler()
 
 void ipi_handler()
 {
+    // assert(!ready_queue.empty());
     return;
 }
 
@@ -29,7 +31,7 @@ void cpu::init(thread_startfunc_t user_func, void *user_arg)
     if (user_func)
     {
         assert_interrupts_disabled();
-        thread::impl *start_impl = context_init(user_func, user_arg);
+        thread::impl *start_impl = context_init((thread_startfunc_t)wrapper, user_func, user_arg);
         cpu::self()->impl_ptr->thread_impl_ptr = start_impl;
         //interrupt TBD
         assert_interrupts_disabled();

@@ -43,10 +43,11 @@ void scheduler()
     std::cout<< "sch arrived "<<std::endl;
     thread t1((thread_startfunc_t)printer, (void *)&counter);
     thread t2((thread_startfunc_t)printer2, (void *)&counter);
+    thread::yield();
     printf("scheduler finished\n");
 }
 
 int main()
 {
-    cpu::boot(2, (thread_startfunc_t)scheduler, nullptr, false, false, 0);
+    cpu::boot(5, (thread_startfunc_t)scheduler, nullptr, true, true, 0);
 }

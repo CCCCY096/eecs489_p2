@@ -7,7 +7,7 @@ thread::thread(thread_startfunc_t user_func, void *user_arg)
 {
     raii_interrupt interrupt_disable;
     try{
-        impl_ptr = context_init(user_func, user_arg);
+        impl_ptr = context_init((thread_startfunc_t)wrapper, user_func, user_arg);
     }catch(std::bad_alloc&){
         throw;
     }

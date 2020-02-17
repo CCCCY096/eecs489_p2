@@ -8,6 +8,7 @@
 #include "utility.h"
 #include <cassert>
 #include "cpu_impl.h"
+#include <cassert>
 std::queue<thread::impl *> ready_queue;
 std::queue<ucontext_t *> finished_queue;
 std::queue<cpu *> sleep_queue;
@@ -47,6 +48,8 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
         morning_call();
         cpu::self()->impl_ptr->thread_impl_ptr->join_queue.pop();
     }
+    ucontext_t* useless_ctx = curr_impl->ctx_ptr;
+    finished_queue.push(curr_impl->ctx_ptr);
     if(!curr_impl->done) 
         curr_impl->done = true;
     else {
@@ -55,16 +58,13 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
         delete curr_impl;
         curr_impl = nullptr;
     }
-    finished_queue.push(curr_impl->ctx_ptr);
     assert_interrupts_disabled();
-    switch_helper();
+    switch_helper(useless_ctx);
 }
 
 
-thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
+thread::impl *context_init(thread_startfunc_t wrap_func, thread_startfunc_t user_func, void *user_arg)
 {
-    // Release_memory
-    release_memory();
     // Make context
     ucontext_t *ucontext_ptr = new ucontext_t;
     char *stack = new char[STACK_SIZE];
@@ -78,21 +78,29 @@ thread::impl *context_init(thread_startfunc_t user_func, void *user_arg)
     thread_impl_ptr->ctx_ptr = ucontext_ptr;
     thread_impl_ptr->tid = id_auto_incr++;
     assert_interrupts_disabled();
-    makecontext(ucontext_ptr, (void (*)())wrapper, 3, user_func, user_arg, thread_impl_ptr );
+    if(user_func)
+        makecontext(ucontext_ptr, (void (*)())wrap_func, 3, user_func, user_arg, thread_impl_ptr );
+    else
+         makecontext(ucontext_ptr, (void (*)())wrap_func, 0 );
     assert_interrupts_disabled();
     return thread_impl_ptr;
 }
 
-void switch_helper()
+void switch_helper(ucontext_t* curr_ctx_ptr)
 {
     assert_interrupts_disabled();
-    thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr; 
+    ucontext_t * tmp_ctx_ptr;
+    if (curr_ctx_ptr){
+        tmp_ctx_ptr = curr_ctx_ptr;
+    } else{
+        tmp_ctx_ptr = cpu::self()->impl_ptr->thread_impl_ptr->ctx_ptr;
+    }
     if (ready_queue.empty())
     {
-        thread::impl* tool_thread = context_init((thread_startfunc_t)suspend_helper, (void*)nullptr);
+        thread::impl* tool_thread = context_init((thread_startfunc_t)suspend_helper, (thread_startfunc_t)nullptr , (void*)nullptr);
         cpu::self()->impl_ptr->thread_impl_ptr = tool_thread;
         assert_interrupts_disabled();
-        swapcontext(curr_impl->ctx_ptr, tool_thread->ctx_ptr);
+        swapcontext(tmp_ctx_ptr, tool_thread->ctx_ptr);
         release_memory();
     }
     else
@@ -104,7 +112,7 @@ void switch_helper()
         // Make sure cpu remember on what thread it is running
         cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
         // swap context
-        swapcontext(curr_impl->ctx_ptr, next_impl->ctx_ptr);
+        swapcontext(tmp_ctx_ptr, next_impl->ctx_ptr);
         assert_interrupts_disabled();
         release_memory();
     }
@@ -112,15 +120,19 @@ void switch_helper()
 
 void suspend_helper()
 {
-    assert_interrupts_disabled();
-    release_memory();
-    sleep_queue.push(cpu::self());
-    cpu::guard.store(0);
-    cpu::interrupt_enable_suspend();
-    // raii_interrupt interrupt;
-    assert_interrupts_enabled();
-    cpu::interrupt_disable();
-    while(cpu::guard.exchange(1)){}
+
+    while (ready_queue.empty())
+    {
+        assert_interrupts_disabled();
+        release_memory();
+        sleep_queue.push(cpu::self());
+        cpu::guard.store(0);
+        cpu::interrupt_enable_suspend();
+        // raii_interrupt interrupt;
+        assert_interrupts_enabled();
+        cpu::interrupt_disable();
+        while(cpu::guard.exchange(1)){}
+    }
 
     thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
     finished_queue.push(curr_impl->ctx_ptr);
@@ -132,6 +144,7 @@ void suspend_helper()
     ready_queue.pop();
     // Make sure cpu remember on what thread it is running
     cpu::self()->impl_ptr->thread_impl_ptr = next_impl;
+    assert_interrupts_disabled();
     // set context
     setcontext(next_impl->ctx_ptr);
 }
@@ -139,6 +152,7 @@ void suspend_helper()
 void morning_call()
 {
     assert_interrupts_disabled();
+    assert(!ready_queue.empty());
     if(!sleep_queue.empty()){
         sleep_queue.front()->interrupt_send();
         sleep_queue.pop();
