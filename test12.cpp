@@ -9,7 +9,7 @@ void printer()
 
 void scheduler()
 {
-    thread t1((thread_startfunc_t)printer , nullptr);
+    thread t1((thread_startfunc_t)printer, nullptr);
     t1.join();
     std::cout << " printer finished" << std::endl;
 }

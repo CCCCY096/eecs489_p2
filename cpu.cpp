@@ -17,15 +17,20 @@ void ipi_handler()
 void cpu::init(thread_startfunc_t user_func, void *user_arg)
 {
     //////////////////
-    while(cpu::guard.exchange(1)){}
+    while (cpu::guard.exchange(1))
+    {
+    }
     //////////////////
 
     assert_interrupts_disabled();
     interrupt_vector_table[TIMER] = timer_handler;
     interrupt_vector_table[IPI] = ipi_handler;
-    try{
+    try
+    {
         cpu::self()->impl_ptr = new cpu::impl;
-    }catch(std::bad_alloc&){
+    }
+    catch (std::bad_alloc &)
+    {
         throw;
     }
     if (user_func)
@@ -39,9 +44,8 @@ void cpu::init(thread_startfunc_t user_func, void *user_arg)
     }
     else
     {
-        thread::impl* tool_thread = context_init((thread_startfunc_t)suspend_helper, (thread_startfunc_t)nullptr , (void*)nullptr);
+        thread::impl *tool_thread = context_init((thread_startfunc_t)suspend_helper, (thread_startfunc_t) nullptr, (void *)nullptr);
         cpu::self()->impl_ptr->thread_impl_ptr = tool_thread;
         setcontext(tool_thread->ctx_ptr);
     }
 }
-

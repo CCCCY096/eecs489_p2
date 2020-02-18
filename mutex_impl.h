@@ -11,11 +11,12 @@ public:
     std::queue<thread::impl *> m_waiting;
     statusType status = FREE;
     uint32_t owner_id = 0;
-    void release(){
-        if (status != BUSY || owner_id != cpu::self()->impl_ptr->thread_impl_ptr->tid ) 
+    void release()
+    {
+        if (status != BUSY || owner_id != cpu::self()->impl_ptr->thread_impl_ptr->tid)
             throw std::runtime_error("Sincerely apologize that we dont support your advanced codeing style :(");
         status = FREE;
-        if(!m_waiting.empty())
+        if (!m_waiting.empty())
         {
             ready_queue.push(m_waiting.front());
             morning_call();
@@ -24,8 +25,9 @@ public:
             status = BUSY;
         }
     }
-    void acquire(){
-        if(status == FREE)
+    void acquire()
+    {
+        if (status == FREE)
         {
             status = BUSY;
             owner_id = cpu::self()->impl_ptr->thread_impl_ptr->tid;

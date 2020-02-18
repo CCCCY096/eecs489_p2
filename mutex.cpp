@@ -4,24 +4,29 @@
 #include "utility.h"
 #include <atomic>
 #include "mutex_impl.h"
-mutex::mutex(){
-     try{
+mutex::mutex()
+{
+    try
+    {
         impl_ptr = new mutex::impl;
-    }catch(std::bad_alloc&){
+    }
+    catch (std::bad_alloc &)
+    {
         throw;
     }
 }
 
-mutex::~mutex(){
+mutex::~mutex()
+{
     delete impl_ptr;
 }
 
-void mutex::unlock(){
+void mutex::unlock()
+{
     assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     impl_ptr->release();
 }
-
 
 void mutex::lock()
 {
@@ -29,10 +34,3 @@ void mutex::lock()
     raii_interrupt interrupt_disable;
     impl_ptr->acquire();
 }
-
-
-
-
-
-
-

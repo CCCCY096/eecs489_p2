@@ -6,19 +6,24 @@
 thread::thread(thread_startfunc_t user_func, void *user_arg)
 {
     raii_interrupt interrupt_disable;
-    try{
+    try
+    {
         impl_ptr = context_init((thread_startfunc_t)wrapper, user_func, user_arg);
-    }catch(std::bad_alloc&){
+    }
+    catch (std::bad_alloc &)
+    {
         throw;
     }
     ready_queue.push(impl_ptr);
     morning_call();
 }
 
-thread::~thread() {
-    if(!this->impl_ptr->done) 
+thread::~thread()
+{
+    if (!this->impl_ptr->done)
         this->impl_ptr->done = true;
-    else {
+    else
+    {
         assert(this->impl_ptr->join_queue.empty());
         this->impl_ptr->ctx_ptr = nullptr;
         delete this->impl_ptr;
@@ -26,11 +31,12 @@ thread::~thread() {
     }
 }
 
-void thread::join(){
+void thread::join()
+{
     assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
-    cpu* current = cpu::self();
-    if(this->impl_ptr && impl_ptr->thread_finished )
+    cpu *current = cpu::self();
+    if (this->impl_ptr && impl_ptr->thread_finished)
         return;
     else if (this->impl_ptr && impl_ptr->thread_finished == false)
         this->impl_ptr->join_queue.push(current->impl_ptr->thread_impl_ptr);

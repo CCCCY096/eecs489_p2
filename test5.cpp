@@ -6,22 +6,23 @@ static int counter = 0;
 void printer(int &n)
 {
     int i = 0;
-    while(i < 100000000)
+    while (i < 100000000)
         i++;
     printf("This is the thread i: %d\n", counter++);
 }
 
 void scheduler()
 {
-    std::vector<thread*> vec;
+    std::vector<thread *> vec;
     vec.resize(15);
-    for( int i = 0; i < 15; i++ ){
+    for (int i = 0; i < 15; i++)
+    {
         vec[i] = new thread((thread_startfunc_t)printer, (void *)&counter);
     }
-    std::cout << " threads generated" <<std::endl;
-    for( int i = 0; i < 15; i++)
+    std::cout << " threads generated" << std::endl;
+    for (int i = 0; i < 15; i++)
         vec[i]->join();
-    std::cout<< "all finished"<<std::endl;
+    std::cout << "all finished" << std::endl;
 }
 
 int main()

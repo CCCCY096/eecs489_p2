@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include "thread.h"
 //thread object ends first
-void printer(thread* n)
+void printer(thread *n)
 {
     n->join();
     std::cout << "first finished " << std::endl;

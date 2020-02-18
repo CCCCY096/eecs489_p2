@@ -7,7 +7,7 @@ mutex m;
 void printer(int &n)
 {
     m.lock();
-    printf ("p1 arrived \n");
+    printf("p1 arrived \n");
     m.unlock();
     // int i = 0;
     // while (i < 30)
@@ -24,7 +24,7 @@ void printer(int &n)
 void printer2(int &n)
 {
     m.lock();
-    printf ("p2 arrived \n");
+    printf("p2 arrived \n");
     m.unlock();
     // int i = 0;
     // while (i < 30)
@@ -40,7 +40,7 @@ void printer2(int &n)
 
 void scheduler()
 {
-    std::cout<< "sch arrived "<<std::endl;
+    std::cout << "sch arrived " << std::endl;
     thread t1((thread_startfunc_t)printer, (void *)&counter);
     thread t2((thread_startfunc_t)printer2, (void *)&counter);
     thread::yield();

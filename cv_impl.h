@@ -10,5 +10,4 @@ public:
     std::queue<thread::impl *> cv_waiting;
 };
 
-
 #endif

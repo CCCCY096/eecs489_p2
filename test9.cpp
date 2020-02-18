@@ -1,6 +1,7 @@
 #include "thread.h"
 
-void scheduler(){
+void scheduler()
+{
     mutex m1;
     m1.unlock();
     m1.lock();
