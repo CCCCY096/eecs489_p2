@@ -38,7 +38,12 @@ void parent(void *a)
     mutex1.unlock();
 
     thread t1((thread_startfunc_t)loop, (void *)"child thread");
-
+    thread t2((thread_startfunc_t)loop, (void *)"child thread");
+    cv1.signal();
+    t1.join();
+    t2.join();
+    cv1.signal();
+    
     loop((void *)"parent thread");
 }
 

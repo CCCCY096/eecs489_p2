@@ -1,25 +1,206 @@
 #include <iostream>
-#include <cstdlib>
+#include <fstream>
+#include <string>
+#include <queue>
+#include <vector>
+#include <stdlib.h>
 #include "thread.h"
+#include <limits>
+using std::cin;
+using std::cout;
 
-static int counter = 0;
-void printer(int &n)
+std::vector<std::queue<int>> requestsCollector;
+std::vector<std::queue<int>> intermediate;
+mutex mqueue;
+cv cv_request;
+cv cv_receive;
+int max_disk_queue;
+int file_num;
+int current_active_threads;
+int current_track = 0;
+int queue_size = 0;
+int req_num;
+
+int find_closest_track(void)
 {
-    int i = 0;
-    while (i < 100000000)
-        i++;
-    printf("This is the thread i: %d\n", counter++);
-    std::cout << "first finished " << std::endl;
+    int i, dist = std::numeric_limits<int>::max(), id = 0;
+    for (i = 0; i < file_num; i++)
+    {
+        if (requestsCollector[i].empty())
+            continue;
+        if (std::abs(requestsCollector[i].front() - current_track) < dist)
+        {
+            dist = std::abs(requestsCollector[i].front() - current_track);
+            id = i;
+        }
+    }
+    current_track = requestsCollector[id].front();
+    return id;
 }
 
-void scheduler()
+void requester(void *a)
 {
-    thread t1((thread_startfunc_t)printer, (void *)&counter);
-    t1.join();
-    std::cout << " printer finished" << std::endl;
+    int id = *(int *)a;
+    mqueue.lock();
+    while (!intermediate[id].empty())
+    {
+        while (queue_size >= max_disk_queue || !requestsCollector[id].empty())
+            cv_request.wait(mqueue);
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_request.signal();
+        cv_receive.signal();
+        thread::yield();
+        cv_receive.signal();
+        int req_track = intermediate[id].front();
+        cout << "Request from requester : " << req_track << std::endl;
+        requestsCollector[id].push(req_track);
+        intermediate[id].pop();
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_request.signal();
+        cv_receive.signal();
+        thread::yield();
+        cv_receive.signal();
+        queue_size++;
+        cv_receive.signal();
+    }
+    req_num--;
+    if (!req_num)
+        cv_receive.signal();
+    mqueue.unlock();
+    cv_receive.signal();
+    cv_receive.signal();
+    cv_receive.signal();
+    cv_request.signal();
+    cv_receive.signal();
+    thread::yield();
+    cv_receive.signal();
+    delete (int *)a;
+    return;
 }
 
-int main()
+void receiver(void *a)
 {
-    cpu::boot(1, (thread_startfunc_t)scheduler, nullptr, false, true, 0);
+    mqueue.lock();
+    while (current_active_threads)
+    {
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_request.signal();
+        cv_receive.signal();
+        thread::yield();
+        cv_receive.signal();
+        while (queue_size < max_disk_queue)
+            cv_receive.wait(mqueue);
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_request.signal();
+        cv_receive.signal();
+        thread::yield();
+        cv_receive.signal();
+        int rid = find_closest_track();
+        cout << " Serve track: " << requestsCollector[rid].front() << std::endl;
+        requestsCollector[rid].pop();
+        if (requestsCollector[rid].empty() && intermediate[rid].empty())
+        {
+            cv_receive.signal();
+            cv_receive.signal();
+            cv_receive.signal();
+            cv_request.signal();
+            cv_receive.signal();
+            thread::yield();
+            cv_receive.signal();
+            current_active_threads--;
+            if (current_active_threads < max_disk_queue)
+                max_disk_queue = current_active_threads;
+        }
+        queue_size--;
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_receive.signal();
+        cv_request.signal();
+        cv_receive.signal();
+        thread::yield();
+        cv_receive.signal();
+        cv_request.broadcast();
+    }
+    mqueue.unlock();
+    return;
+}
+
+void scheduler(void *a)
+{
+    for (int i = 0; i < file_num; i++)
+    {
+        int *duty_dum = new int;
+        *duty_dum = i;
+        thread(requester, (void *)duty_dum);
+    }
+    thread(receiver, nullptr);
+    return;
+}
+
+int main(int argc, char *argv[])
+{
+    max_disk_queue = 3;
+    file_num = 10;
+    req_num = file_num;
+    current_active_threads = file_num;
+    requestsCollector.resize(file_num);
+    std::queue<int> qtmp;
+    qtmp.push(785);
+    qtmp.push(53);
+    intermediate.push_back(qtmp);
+    qtmp = {};
+    qtmp.push(350);
+    qtmp.push(914);
+    intermediate.push_back(qtmp);
+    qtmp = {};
+    qtmp.push(827);
+    qtmp.push(567);
+    intermediate.push_back(qtmp);
+    qtmp = {};
+    qtmp.push(302);
+    qtmp.push(230);
+    intermediate.push_back(qtmp);
+    qtmp = {};
+    qtmp.push(631);
+    qtmp.push(11);
+    intermediate.push_back(qtmp);
+     qtmp.push(785);
+    qtmp.push(53);
+    intermediate.push_back(qtmp);
+    qtmp = {};
+    qtmp.push(350);
+    qtmp.push(914);
+    qtmp.push(302);
+    qtmp.push(230);
+    qtmp.push(302);
+    qtmp.push(230);
+    intermediate.push_back(qtmp);
+    qtmp = {};
+    qtmp.push(827);
+    qtmp.push(567);
+    qtmp.push(302);
+    qtmp.push(230);
+    intermediate.push_back(qtmp);
+    qtmp = {};
+    qtmp.push(302);
+    qtmp.push(230);
+    intermediate.push_back(qtmp);
+    qtmp = {};
+    qtmp.push(631);
+    qtmp.push(11);
+    qtmp.push(302);
+    qtmp.push(230);
+    intermediate.push_back(qtmp);
+    if (max_disk_queue > file_num)
+        max_disk_queue = file_num;
+    cpu::boot(1, (thread_startfunc_t)scheduler, nullptr, false, false, 0);
+    return 0;
 }

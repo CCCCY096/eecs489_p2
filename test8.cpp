@@ -11,6 +11,7 @@ void printer(thread *n)
 void scheduler()
 {
     thread t1((thread_startfunc_t)printer, (void *)&t1);
+    thread::yield();
     std::cout << " printer finished" << std::endl;
 }
 
