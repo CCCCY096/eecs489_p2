@@ -10,6 +10,9 @@ test8.cpp
 test9.cpp
 test10.cpp
 test12.cpp
+test14.cpp
+test15.cpp
+test16.cpp
 cpu_impl.h
 cpu.cpp
 cv_impl.h

@@ -4,7 +4,7 @@
 
 static int counter = 0;
 mutex m;
-bool done = true;
+bool done = false;
 cv c1;
 void printer(int &n)
 {
@@ -37,7 +37,7 @@ void printer2(int &n)
     while (i < 30)
     {
         m.lock();
-        while(!done)
+        while(done)
             c1.wait(m);
         done = !done;
         c1.signal();
@@ -55,6 +55,8 @@ void scheduler()
     std::cout << "sch arrived " << std::endl;
     thread t1((thread_startfunc_t)printer, (void *)&counter);
     thread t2((thread_startfunc_t)printer2, (void *)&counter);
+    thread t3((thread_startfunc_t)printer2, (void *)&counter);
+    thread t4((thread_startfunc_t)printer2, (void *)&counter);
     thread::yield();
     printf("scheduler finished\n");
 }

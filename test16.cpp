@@ -19,8 +19,8 @@ void printer(int &n)
         while(!done)
             c1.wait(m);
         done = !done;
-        c1.signal();
         m.unlock();
+        c1.signal();
         thread::yield();
     }
     m.lock();
@@ -40,9 +40,9 @@ void printer2(int &n)
         while(!done)
             c1.wait(m);
         done = !done;
-        c1.signal();
         std::cout<< "thread 2: " << i++ <<std::endl;
         m.unlock();
+        c1.signal();
         thread::yield();
     }
     m.lock();
@@ -55,6 +55,8 @@ void scheduler()
     std::cout << "sch arrived " << std::endl;
     thread t1((thread_startfunc_t)printer, (void *)&counter);
     thread t2((thread_startfunc_t)printer2, (void *)&counter);
+    thread t3((thread_startfunc_t)printer2, (void *)&counter);
+    thread t4((thread_startfunc_t)printer2, (void *)&counter);
     thread::yield();
     printf("scheduler finished\n");
 }
