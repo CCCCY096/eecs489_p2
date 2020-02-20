@@ -39,7 +39,6 @@ void printer2(int &n)
         m.lock();
         while(!done)
             c1.wait(m);
-        done = !done;
         std::cout<< "thread 2: " << i++ <<std::endl;
         m.unlock();
         c1.signal();
