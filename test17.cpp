@@ -20,6 +20,7 @@ void printer()
     m.unlock();
     t1.join();
     t3.join();
+    printf("I'm really done\n");
 }
 
 void scheduler()
