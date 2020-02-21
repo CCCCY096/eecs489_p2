@@ -13,6 +13,7 @@ test12.cpp
 test14.cpp
 test15.cpp
 test16.cpp
+test17.cpp
 cpu_impl.h
 cpu.cpp
 cv_impl.h
