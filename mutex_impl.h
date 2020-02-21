@@ -1,18 +1,22 @@
 #ifndef MUTEX_IMPL_H_
 #define MUTEX_IMPL_H_
+
+#include <queue>
+#include <stdexcept>
 #include "mutex.h"
 #include "thread_impl.h"
-#include <queue>
 #include "utility.h"
-#include <stdexcept>
+
 class mutex::impl
 {
 public:
     std::queue<thread::impl *> m_waiting;
     statusType status = FREE;
+    // The id of owner thread
     uint32_t owner_id = 0;
     void release()
     {
+        // If the mutex is not busy or the current thread is not its owner
         if (status != BUSY || owner_id != cpu::self()->impl_ptr->thread_impl_ptr->tid)
             throw std::runtime_error("Sincerely apologize that we dont support your advanced codeing style :(");
         status = FREE;
@@ -30,10 +34,12 @@ public:
         if (status == FREE)
         {
             status = BUSY;
+            // Assign the owner
             owner_id = cpu::self()->impl_ptr->thread_impl_ptr->tid;
         }
         else
         {
+            // Add current thread to the waiting queue for this mutex
             m_waiting.push(cpu::self()->impl_ptr->thread_impl_ptr);
             switch_helper();
         }

@@ -7,6 +7,8 @@
 class cpu::impl
 {
 public:
+    // Pointer to thread::impl. Use this var to remeber which thread
+    // this cpu is running on
     thread::impl *thread_impl_ptr;
 };
 

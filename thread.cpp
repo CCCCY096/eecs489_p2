@@ -20,8 +20,11 @@ thread::thread(thread_startfunc_t user_func, void *user_arg)
 
 thread::~thread()
 {
-    if (!this->impl_ptr->done)
-        this->impl_ptr->done = true;
+    // If the user func has NOT already finished, 
+    // then we shouldn't destroy the thread obj
+    if (!this->impl_ptr->thread_done)
+        this->impl_ptr->thread_done = true;
+    // If user func has ALREADY finished, destory the obj
     else
     {
         assert(this->impl_ptr->join_queue.empty());
@@ -36,13 +39,14 @@ void thread::join()
     assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
     cpu *current = cpu::self();
-    if (this->impl_ptr && impl_ptr->thread_finished)
+    // If user func of the JOINEE thread has finished, then we should do nothing
+    if (this->impl_ptr && impl_ptr->user_func_finished)
         return;
-    else if (this->impl_ptr && impl_ptr->thread_finished == false)
+    // Else: current thread will be blocked until JOINEE thread finished
+    else if (this->impl_ptr && impl_ptr->user_func_finished == false)
         this->impl_ptr->join_queue.push(current->impl_ptr->thread_impl_ptr);
     else
         return;
-    // Maybe refactor this? It's kind of duplicate with a part of yield
     switch_helper();
 }
 
@@ -50,6 +54,7 @@ void thread::yield()
 {
     assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
+    // If there is no available thread in ready queue, then yield() should do nothing
     if (ready_queue.empty())
         return;
     ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr);

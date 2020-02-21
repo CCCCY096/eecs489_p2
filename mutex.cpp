@@ -1,9 +1,10 @@
 #include <queue>
+#include <atomic>
 #include "mutex.h"
 #include "cpu_impl.h"
 #include "utility.h"
-#include <atomic>
 #include "mutex_impl.h"
+
 mutex::mutex()
 {
     try

@@ -1,10 +1,11 @@
+#include <stdexcept>
 #include "cv.h"
 #include "cv_impl.h"
 #include "utility.h"
 #include "thread_impl.h"
 #include "cpu_impl.h"
 #include "mutex_impl.h"
-#include <stdexcept>
+
 cv::cv()
 {
     try
@@ -26,6 +27,7 @@ void cv::wait(mutex &m)
 {
     assert_interrupts_enabled();
     raii_interrupt interrupt_disable;
+    // Add current thread to the waiting queue
     impl_ptr->cv_waiting.push(cpu::self()->impl_ptr->thread_impl_ptr);
     m.impl_ptr->release();
     switch_helper();
@@ -39,6 +41,7 @@ void cv::signal()
     if (!impl_ptr->cv_waiting.empty())
     {
         ready_queue.push(impl_ptr->cv_waiting.front());
+        // Notify (if any) one CPU to execute available thread(s) 
         morning_call();
         impl_ptr->cv_waiting.pop();
     }
@@ -51,6 +54,7 @@ void cv::broadcast()
     while (!impl_ptr->cv_waiting.empty())
     {
         ready_queue.push(impl_ptr->cv_waiting.front());
+        // Notify (if any) one CPU to execute available thread(s)
         morning_call();
         impl_ptr->cv_waiting.pop();
     }

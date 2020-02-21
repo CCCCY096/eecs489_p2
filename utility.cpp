@@ -42,7 +42,7 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
     // 1. push current context to finished queue
     // 2. switch to next context
     // Before delete this thread, release all threads that are waiting for it
-    curr_impl->thread_finished = true;
+    curr_impl->user_func_finished = true;
     while (!cpu::self()->impl_ptr->thread_impl_ptr->join_queue.empty())
     {
         ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr->join_queue.front());
@@ -51,8 +51,8 @@ void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_im
     }
     ucontext_t *useless_ctx = curr_impl->ctx_ptr;
     finished_queue.push(curr_impl->ctx_ptr);
-    if (!curr_impl->done)
-        curr_impl->done = true;
+    if (!curr_impl->thread_done)
+        curr_impl->thread_done = true;
     else
     {
         assert(curr_impl->join_queue.empty());
