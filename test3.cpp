@@ -30,8 +30,18 @@ int find_closest_track(void)
             continue;
         if (std::abs(requestsCollector[i].front() - current_track) < dist)
         {
+            mqueue.lock();
+            thread::yield();
+            mqueue.unlock();
+            mqueue.lock();
+            thread::yield();
+            mqueue.unlock();
+            mqueue.lock();
+            thread::yield();
+            mqueue.unlock();
             dist = std::abs(requestsCollector[i].front() - current_track);
             id = i;
+            thread::yield();
         }
     }
     current_track = requestsCollector[id].front();
@@ -50,10 +60,17 @@ void requester(void *a)
         cout << "Request from requester : " << req_track << std::endl;
         requestsCollector[id].push(req_track);
         intermediate[id].pop();
+        mqueue.lock();
+        thread::yield();
+        mqueue.unlock();
         queue_size++;
         cv_receive.signal();
     }
     req_num--;
+    mqueue.lock();
+    thread::yield();
+    mqueue.unlock();
+    thread::yield();
     if (!req_num)
         cv_receive.signal();
     mqueue.unlock();
@@ -68,12 +85,28 @@ void receiver(void *a)
     {
         while (queue_size < max_disk_queue)
             cv_receive.wait(mqueue);
+        mqueue.lock();
+        thread::yield();
+        mqueue.unlock();
+        mqueue.lock();
+        thread::yield();
+        mqueue.unlock();
+        mqueue.lock();
+        thread::yield();
+        mqueue.unlock();
+        mqueue.lock();
+        thread::yield();
+        mqueue.unlock();
+        mqueue.lock();
+        thread::yield();
+        mqueue.unlock();
         int rid = find_closest_track();
         cout << " Serve track: " << requestsCollector[rid].front() << std::endl;
         requestsCollector[rid].pop();
         if (requestsCollector[rid].empty() && intermediate[rid].empty())
         {
             current_active_threads--;
+            thread::yield();
             if (current_active_threads < max_disk_queue)
                 max_disk_queue = current_active_threads;
         }
