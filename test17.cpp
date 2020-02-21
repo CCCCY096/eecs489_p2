@@ -4,7 +4,7 @@
 
 mutex m;
 
-void printer2(){m.lock();thread::yield();m.unlock();}
+void printer2(){m.lock();m.unlock();}
 
 
 void printer()
@@ -20,6 +20,7 @@ void printer()
     m.unlock();
     t1.join();
     t3.join();
+    printf("I'm really done\n");
 }
 
 void scheduler()

@@ -12,8 +12,8 @@ using std::cout;
 std::vector<std::queue<int>> requestsCollector;
 std::vector<std::queue<int>> intermediate;
 mutex mqueue;
-cv cv_request;
-cv cv_receive;
+// cv cv_request;
+// cv cv_receive;
 int max_disk_queue;
 int file_num;
 int current_active_threads;
@@ -30,15 +30,15 @@ int find_closest_track(void)
             continue;
         if (std::abs(requestsCollector[i].front() - current_track) < dist)
         {
-            mqueue.lock();
+            //mqueue.lock();
             thread::yield();
-            mqueue.unlock();
-            mqueue.lock();
+            //mqueue.unlock();
+            //mqueue.lock();
             thread::yield();
-            mqueue.unlock();
-            mqueue.lock();
+            //mqueue.unlock();
+            //mqueue.lock();
             thread::yield();
-            mqueue.unlock();
+            //mqueue.unlock();
             dist = std::abs(requestsCollector[i].front() - current_track);
             id = i;
             thread::yield();
@@ -51,55 +51,55 @@ int find_closest_track(void)
 void requester(void *a)
 {
     int id = *(int *)a;
-    mqueue.lock();
+    //mqueue.lock();
     while (!intermediate[id].empty())
     {
-        while (queue_size >= max_disk_queue || !requestsCollector[id].empty())
-            cv_request.wait(mqueue);
+        // while (queue_size >= max_disk_queue || !requestsCollector[id].empty()){}
+            // cv_request.wait(mqueue);
         int req_track = intermediate[id].front();
         cout << "Request from requester : " << req_track << std::endl;
         requestsCollector[id].push(req_track);
         intermediate[id].pop();
-        mqueue.lock();
+        //mqueue.lock();
         thread::yield();
-        mqueue.unlock();
+        //mqueue.unlock();
         queue_size++;
-        cv_receive.signal();
+        // cv_receive.signal();
     }
     req_num--;
-    mqueue.lock();
+    //mqueue.lock();
     thread::yield();
-    mqueue.unlock();
+    //mqueue.unlock();
     thread::yield();
-    if (!req_num)
-        cv_receive.signal();
-    mqueue.unlock();
+    // if (!req_num)
+        // cv_receive.signal();
+    //mqueue.unlock();
     delete (int *)a;
     return;
 }
 
 void receiver(void *a)
 {
-    mqueue.lock();
+    //mqueue.lock();
     while (current_active_threads)
     {
-        while (queue_size < max_disk_queue)
-            cv_receive.wait(mqueue);
-        mqueue.lock();
+        // while (queue_size < max_disk_queue)
+            // cv_receive.wait(mqueue);
+        //mqueue.lock();
         thread::yield();
-        mqueue.unlock();
-        mqueue.lock();
+        //mqueue.unlock();
+        //mqueue.lock();
         thread::yield();
-        mqueue.unlock();
-        mqueue.lock();
+        //mqueue.unlock();
+        //mqueue.lock();
         thread::yield();
-        mqueue.unlock();
-        mqueue.lock();
+        //mqueue.unlock();
+        //mqueue.lock();
         thread::yield();
-        mqueue.unlock();
-        mqueue.lock();
+        //mqueue.unlock();
+        //mqueue.lock();
         thread::yield();
-        mqueue.unlock();
+        //mqueue.unlock();
         int rid = find_closest_track();
         cout << " Serve track: " << requestsCollector[rid].front() << std::endl;
         requestsCollector[rid].pop();
@@ -111,9 +111,9 @@ void receiver(void *a)
                 max_disk_queue = current_active_threads;
         }
         queue_size--;
-        cv_request.broadcast();
+        // cv_request.broadcast();
     }
-    mqueue.unlock();
+    //mqueue.unlock();
     return;
 }
 

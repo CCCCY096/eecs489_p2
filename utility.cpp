@@ -9,10 +9,13 @@
 #include <cassert>
 #include "cpu_impl.h"
 #include <cassert>
+
+// Initialize global variables
 std::queue<thread::impl *> ready_queue;
 std::queue<ucontext_t *> finished_queue;
 std::queue<cpu *> sleep_queue;
 uint32_t id_auto_incr = 1;
+
 void release_memory()
 {
     assert_interrupts_disabled();
@@ -27,32 +30,36 @@ void release_memory()
     assert_interrupts_disabled();
 }
 
-void wrapper(thread_startfunc_t user_func, void *user_arg, thread::impl *curr_impl)
+void wrapper(thread_startfunc_t user_func, void *user_arg)
 {
+    /* ----- Execute user function ------------- */
     assert_interrupts_disabled();
     release_memory();
     cpu::guard.store(0);
     cpu::interrupt_enable();
     user_func(user_arg);
     assert_interrupts_enabled();
-    raii_interrupt interrupt_disable;
-    // If no available user functions in ready_queue, suspend
+    /* ----- user function finished ------------ */
 
-    // Pick the first available user function:
-    // 1. push current context to finished queue
-    // 2. switch to next context
-    // Before delete this thread, release all threads that are waiting for it
+    raii_interrupt interrupt_disable;
+    thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
+    // Mark current thread as uesr_func_finished
     curr_impl->user_func_finished = true;
+    // Before delete this thread, release all threads that are waiting for it
     while (!cpu::self()->impl_ptr->thread_impl_ptr->join_queue.empty())
     {
         ready_queue.push(cpu::self()->impl_ptr->thread_impl_ptr->join_queue.front());
         morning_call();
         cpu::self()->impl_ptr->thread_impl_ptr->join_queue.pop();
     }
+    // useless_ctx: trivial var to pass to switch helper
+    // switch helper then will know that it doesn't need to store the current context
     ucontext_t *useless_ctx = curr_impl->ctx_ptr;
     finished_queue.push(curr_impl->ctx_ptr);
+    // If thread obj has not finished, then we should not destroy the obj
     if (!curr_impl->thread_done)
         curr_impl->thread_done = true;
+    // Else destroy the obj
     else
     {
         assert(curr_impl->join_queue.empty());
@@ -79,8 +86,9 @@ thread::impl *context_init(thread_startfunc_t wrap_func, thread_startfunc_t user
     thread_impl_ptr->ctx_ptr = ucontext_ptr;
     thread_impl_ptr->tid = id_auto_incr++;
     assert_interrupts_disabled();
+    // 2 choice to make context for: wrapper or suspend_helper
     if (user_func)
-        makecontext(ucontext_ptr, (void (*)())wrap_func, 3, user_func, user_arg, thread_impl_ptr);
+        makecontext(ucontext_ptr, (void (*)())wrap_func, 3, user_func, user_arg);
     else
         makecontext(ucontext_ptr, (void (*)())wrap_func, 0);
     assert_interrupts_disabled();
@@ -90,6 +98,7 @@ thread::impl *context_init(thread_startfunc_t wrap_func, thread_startfunc_t user
 void switch_helper(ucontext_t *curr_ctx_ptr)
 {
     assert_interrupts_disabled();
+    // Trivial procedures to decide which context to store
     ucontext_t *tmp_ctx_ptr;
     if (curr_ctx_ptr)
     {
@@ -99,6 +108,7 @@ void switch_helper(ucontext_t *curr_ctx_ptr)
     {
         tmp_ctx_ptr = cpu::self()->impl_ptr->thread_impl_ptr->ctx_ptr;
     }
+    // If there is no available func in ready_queue, then we should make context for suspend_helper and suspends there
     if (ready_queue.empty())
     {
         thread::impl *tool_thread = context_init((thread_startfunc_t)suspend_helper, (thread_startfunc_t) nullptr, (void *)nullptr);
@@ -107,6 +117,7 @@ void switch_helper(ucontext_t *curr_ctx_ptr)
         swapcontext(tmp_ctx_ptr, tool_thread->ctx_ptr);
         release_memory();
     }
+    // Else, then we should pick next available thread and swap to there
     else
     {
         assert_interrupts_disabled();
@@ -125,6 +136,7 @@ void switch_helper(ucontext_t *curr_ctx_ptr)
 void suspend_helper()
 {
     assert_interrupts_disabled();
+    // If ready_queue is empty, then suspends here
     while (ready_queue.empty())
     {
         assert_interrupts_disabled();
@@ -132,15 +144,12 @@ void suspend_helper()
         sleep_queue.push(cpu::self());
         cpu::guard.store(0);
         cpu::interrupt_enable_suspend();
-        // raii_interrupt interrupt;
         assert_interrupts_enabled();
         cpu::interrupt_disable();
-        while (cpu::guard.exchange(1))
-        {
-        }
+        while (cpu::guard.exchange(1)) {}
     }
-
     thread::impl *curr_impl = cpu::self()->impl_ptr->thread_impl_ptr;
+    // Now that the suspend_helper has done its job, add its context to finished_queue
     finished_queue.push(curr_impl->ctx_ptr);
     assert(curr_impl->join_queue.empty());
     delete curr_impl;
